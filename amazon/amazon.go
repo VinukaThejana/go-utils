@@ -25,9 +25,9 @@ type AWS struct {
 }
 
 // InitAWS is a funtion to intialize the AWS session
-func InitAWS(AwsS3Region, AwsAccessKeyID, AwsSecretAccsessKey string) (*session.Session, errors.Status) {
+func InitAWS(AwsAccessKeyID, AwsSecretAccsessKey, AwsRegion string) (*session.Session, errors.Status) {
 	config := aws.Config{
-		Region: aws.String(AwsS3Region),
+		Region: aws.String(AwsRegion),
 		Credentials: credentials.NewStaticCredentials(
 			AwsAccessKeyID,
 			AwsSecretAccsessKey,
