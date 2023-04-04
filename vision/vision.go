@@ -36,8 +36,8 @@ func InitVision(googleKey string) (*cloudVision.ImageAnnotatorClient, errors.Sta
 // Vision is the struct that contains
 // the image anotator instance
 type Vision struct {
-	Client      *cloudVision.ImageAnnotatorClient
-	redisVision *redis.Client
+	Client *cloudVision.ImageAnnotatorClient
+	Redis  *redis.Client
 }
 
 // Detect is used to detect wether the
@@ -47,7 +47,7 @@ func (v Vision) Detect(fileName string, hash string) (errors.Status, VisonTypes)
 
 	// Check the Redis database to reduce API
 	// calls
-	state := v.redisVision.Get(ctx, hash).Val()
+	state := v.Redis.Get(ctx, hash).Val()
 	if state != "" {
 		if state != ProperContent.String() {
 			return errors.CloudVisionFailed, ParseVsionTypes(state)
@@ -108,7 +108,7 @@ func (v Vision) Detect(fileName string, hash string) (errors.Status, VisonTypes)
 		return errors.CloudVisionFailed, RacyContent
 	}
 
-	v.redisVision.Set(ctx, hash, ProperContent.String(), 0)
+	v.Redis.Set(ctx, hash, ProperContent.String(), 0)
 	return errors.Okay, ProperContent
 }
 
