@@ -5,6 +5,7 @@ package amazon
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/google/uuid"
 )
 
@@ -92,4 +94,21 @@ func (a AWS) Upload(AwsS3StorageBucketName, AwsS3Region, fileName string) (*stri
 
 	url := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", AwsS3StorageBucketName, AwsS3Region, uid.String())
 	return &url, errors.Okay
+}
+
+// SendMessage is a method on AWS to send messages to SQS queue
+func (a AWS) SendMessage(sqsURL string, payload interface{}) {
+	// Marshal the payload of the data sent to SQS
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		log.Printf("Failed to marshal data %#+v\n", payload)
+		log.Println(err)
+		return
+	}
+
+	sqsClient := sqs.New(a.Session)
+	_, err = sqsClient.SendMessage(&sqs.SendMessageInput{
+		QueueUrl:    &sqsURL,
+		MessageBody: aws.String(string(jsonData)),
+	})
 }
