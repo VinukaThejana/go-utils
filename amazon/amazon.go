@@ -49,12 +49,12 @@ func InitAWS(AwsAccessKeyID, AwsSecretAccsessKey, AwsRegion string) (*session.Se
 
 // Upload is a method on AWS to upload the given image/video
 // to the amazon s3 storage bucket
-func (a AWS) Upload(AwsS3StorageBucketName, AwsS3Region, fileName string) (*string, errors.Status) {
+func (a AWS) Upload(AwsS3StorageBucketName, AwsS3Region, fileName string) (*string, *string, errors.Status) {
 	file, err := os.Open(fileName)
 	if err != nil {
 		log.Println("Failed to open the file")
 		log.Println(err)
-		return nil, errors.InternalServerError
+		return nil, nil, errors.InternalServerError
 	}
 	defer file.Close()
 
@@ -62,7 +62,7 @@ func (a AWS) Upload(AwsS3StorageBucketName, AwsS3Region, fileName string) (*stri
 	if err != nil {
 		log.Println("Failed to get file stat")
 		log.Println(err)
-		return nil, errors.InternalServerError
+		return nil, nil, errors.InternalServerError
 	}
 
 	fileSize := fileInfo.Size()
@@ -73,7 +73,7 @@ func (a AWS) Upload(AwsS3StorageBucketName, AwsS3Region, fileName string) (*stri
 	if err != nil {
 		log.Println("Failed to generate UUID")
 		log.Println(err)
-		return nil, errors.InternalServerError
+		return nil, nil, errors.InternalServerError
 	}
 
 	_, err = s3.New(a.Session).PutObject(&s3.PutObjectInput{
@@ -89,11 +89,12 @@ func (a AWS) Upload(AwsS3StorageBucketName, AwsS3Region, fileName string) (*stri
 	if err != nil {
 		log.Println("Failed to upload !")
 		log.Println(err)
-		return nil, errors.InternalServerError
+		return nil, nil, errors.InternalServerError
 	}
 
+	uidString := uid.String()
 	url := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", AwsS3StorageBucketName, AwsS3Region, uid.String())
-	return &url, errors.Okay
+	return &url, &uidString, errors.Okay
 }
 
 // SendMessage is a method on AWS to send messages to SQS queue
