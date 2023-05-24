@@ -4,35 +4,29 @@ package cloudinary
 
 import (
 	"context"
-	"log"
 
-	"github.com/VinukaThejana/go-utils/errors"
 	"github.com/cloudinary/cloudinary-go/v2"
 	"github.com/cloudinary/cloudinary-go/v2/api"
 	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
 )
 
-// InitCloudinary is a function that is used to initalize the
-// cloudinary config
-func InitCloudinary(projectID, apiKey, apiSecret string) (*cloudinary.Cloudinary, errors.Status) {
-	client, err := cloudinary.NewFromParams(projectID, apiKey, apiSecret)
-	if err != nil {
-		log.Println("Failed to initialize cloudinary")
-		log.Println(err)
-		return nil, errors.InternalServerError
-	}
-
-	return client, errors.Okay
-}
-
-// Cloudinary is a struct that is used to manage SDKs related
-// to cloudinary
+// Cloudinary is a struct that contains the cloudinary client
 type Cloudinary struct {
 	Client *cloudinary.Cloudinary
 }
 
+// Init is a function that is used to initialize cloudinary
+func (c Cloudinary) Init(projectID, apiKey, apiSecret string) (*cloudinary.Cloudinary, error) {
+	client, err := cloudinary.NewFromParams(projectID, apiKey, apiSecret)
+	if err != nil {
+		return nil, err
+	}
+
+	return client, nil
+}
+
 // Save the given image to the cloudinary CDN
-func (c Cloudinary) Save(path, hash, url string, eager, transformation *string) string {
+func (c Cloudinary) Save(path, hash, url string, eager, transformation *string) (string, error) {
 	if eager == nil {
 		defaultEager := "f_avif|f_jp2|f_webp/fl_awebp"
 		eager = &defaultEager
@@ -52,11 +46,8 @@ func (c Cloudinary) Save(path, hash, url string, eager, transformation *string) 
 		Transformation: *transformation,
 	})
 	if err != nil {
-		log.Println("Failed to upload the image to clodinary !")
-		log.Println("The url is : ", url, "\nThe hash is : ", hash)
-		log.Println(err)
-		return url
+		return url, err
 	}
 
-	return uploadResult.SecureURL
+	return uploadResult.SecureURL, nil
 }
