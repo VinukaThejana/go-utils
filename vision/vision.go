@@ -4,45 +4,42 @@ package vision
 import (
 	"context"
 	"encoding/base64"
-	"log"
+	"fmt"
 	"os"
 
 	cloudVision "cloud.google.com/go/vision/apiv1"
-	"github.com/VinukaThejana/go-utils/errors"
+	"github.com/VinukaThejana/go-utils/logger"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/api/option"
 )
 
-// InitVision is used to initialize the Google Cloud Vision
-// instance to detect explicit image content
-func InitVision(googleKey string) (*cloudVision.ImageAnnotatorClient, errors.Status) {
-	auth, err := base64.StdEncoding.DecodeString(googleKey)
-	if err != nil {
-		log.Println("Failed to extract the Google private key")
-		log.Println(err)
-		return nil, errors.InternalServerError
-	}
+var log logger.Logger
 
-	client, err := cloudVision.NewImageAnnotatorClient(context.Background(), option.WithCredentialsJSON(auth))
-	if err != nil {
-		log.Println("Failed to initialize the image anotator client")
-		log.Println(err)
-		return nil, errors.InternalServerError
-	}
-
-	return client, errors.Okay
-}
-
-// Vision is the struct that contains
-// the image anotator instance
+// Vision is a struct that contains the vision client
 type Vision struct {
 	Client *cloudVision.ImageAnnotatorClient
 	Redis  *redis.Client
 }
 
-// Detect is used to detect wether the
-// image contains exmplicit content
-func (v Vision) Detect(fileName string, hash string) (errors.Status, VisonTypes) {
+// Init is used to initialize the Google Cloud Vision
+// instance to detect explicit image content
+func (v *Vision) Init(googleKey string) error {
+	auth, err := base64.StdEncoding.DecodeString(googleKey)
+	if err != nil {
+		return err
+	}
+
+	client, err := cloudVision.NewImageAnnotatorClient(context.Background(), option.WithCredentialsJSON(auth))
+	if err != nil {
+		return err
+	}
+
+	v.Client = client
+	return nil
+}
+
+// Detect is used to detect wether the image contains explicit content
+func (v Vision) Detect(fileName string, hash string) (VisonTypes, error) {
 	ctx := context.Background()
 
 	// Check the Redis database to reduce API
@@ -50,32 +47,26 @@ func (v Vision) Detect(fileName string, hash string) (errors.Status, VisonTypes)
 	state := v.Redis.Get(ctx, hash).Val()
 	if state != "" {
 		if state != ProperContent.String() {
-			return errors.CloudVisionFailed, ParseVsionTypes(state)
+			return ParseVsionTypes(state), ErrVisionFailed
 		}
 
-		return errors.Okay, ProperContent
+		return ProperContent, nil
 	}
 
 	file, err := os.Open(fileName)
 	if err != nil {
-		log.Println("Failed to open the file in cloud vision detector")
-		log.Println(err)
-		return errors.InternalServerError, UnknwonContent
+		return UnknwonContent, ErrInternalServerError
 	}
 	defer file.Close()
 
 	image, err := cloudVision.NewImageFromReader(file)
 	if err != nil {
-		log.Println("Cloud vision failed to read the image")
-		log.Println(err)
-		return errors.InternalServerError, UnknwonContent
+		return UnknwonContent, ErrInternalServerError
 	}
 
 	props, err := v.Client.DetectSafeSearch(context.Background(), image, nil)
 	if err != nil {
-		log.Println("Failed to analyze by  cloud vision")
-		log.Println(err)
-		return errors.InternalServerError, UnknwonContent
+		return UnknwonContent, ErrInternalServerError
 	}
 
 	adult := props.Adult.Enum().String()
@@ -85,31 +76,31 @@ func (v Vision) Detect(fileName string, hash string) (errors.Status, VisonTypes)
 	racy := props.Racy.Enum().String()
 
 	if adult == VeryLikely.String() || adult == Likely.String() || adult == Possible.String() {
-		log.Println("Cloud vision failed on Adult content")
-		return errors.Okay, AdultContent
+		log.Error(fmt.Errorf("Cloud vision failed on Adult content"), nil)
+		return AdultContent, ErrVisionFailed
 	}
 	if violence == VeryLikely.String() {
-		log.Println("Cloud vision failed on violence content")
-		return errors.Okay, ViolenceContent
+		log.Error(fmt.Errorf("Cloud vision failed on violence content"), nil)
+		return ViolenceContent, ErrVisionFailed
 	}
 
 	if spoof == VeryLikely.String() {
-		log.Println("Cloud vision failed on spoof content")
-		return errors.CloudVisionFailed, SpoofContent
+		log.Error(fmt.Errorf("Cloud vision failed on spoof content"), nil)
+		return SpoofContent, ErrVisionFailed
 	}
 
 	if medical == VeryLikely.String() {
-		log.Println("Cloud vision failed on mediacal content")
-		return errors.CloudVisionFailed, MedicalContent
+		log.Error(fmt.Errorf("Cloud vision failed on mediacal content"), nil)
+		return MedicalContent, ErrVisionFailed
 	}
 
 	if racy == VeryLikely.String() {
-		log.Println("Cloud vision failed on racy content")
-		return errors.CloudVisionFailed, RacyContent
+		log.Error(fmt.Errorf("Cloud vision failed on racy content"), nil)
+		return RacyContent, ErrVisionFailed
 	}
 
 	v.Redis.Set(ctx, hash, ProperContent.String(), 0)
-	return errors.Okay, ProperContent
+	return ProperContent, nil
 }
 
 // VisonTypes - The type returned by the Google Cloud vison API
@@ -179,4 +170,11 @@ const (
 	// Possible is to represent that the image has a low risk
 	// in the given category
 	Possible Sevearity = "POSSIBLE"
+)
+
+var (
+	// ErrVisionFailed is to represent that the vision API failed
+	ErrVisionFailed = fmt.Errorf("cloud vision failed")
+	// ErrInternalServerError is to represent that the server failed
+	ErrInternalServerError = fmt.Errorf("something went wrong")
 )
