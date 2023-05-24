@@ -7,11 +7,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 
-	"github.com/VinukaThejana/go-utils/errors"
+	"github.com/VinukaThejana/go-utils/logger"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -20,14 +19,16 @@ import (
 	"github.com/google/uuid"
 )
 
+var log logger.Logger
+
 // AWS is a struct that contains the methods that
 // needs to be implemented on AWS
 type AWS struct {
 	Session *session.Session
 }
 
-// InitAWS is a funtion to intialize the AWS session
-func InitAWS(AwsAccessKeyID, AwsSecretAccsessKey, AwsRegion string) (*session.Session, errors.Status) {
+// Init is a funtion to intialize the AWS session
+func (a *AWS) Init(AwsAccessKeyID, AwsSecretAccsessKey, AwsRegion string) error {
 	config := aws.Config{
 		Region: aws.String(AwsRegion),
 		Credentials: credentials.NewStaticCredentials(
@@ -39,30 +40,25 @@ func InitAWS(AwsAccessKeyID, AwsSecretAccsessKey, AwsRegion string) (*session.Se
 
 	sess, err := session.NewSession(&config)
 	if err != nil {
-		log.Println("Failed to intialize the connection with Amazon")
-		log.Println(err)
-		return nil, errors.InternalServerError
+		return err
 	}
 
-	return sess, errors.Okay
+	a.Session = sess
+	return nil
 }
 
 // Upload is a method on AWS to upload the given image/video
 // to the amazon s3 storage bucket
-func (a AWS) Upload(AwsS3StorageBucketName, AwsS3Region, fileName string) (*string, *string, errors.Status) {
+func (a AWS) Upload(AwsS3StorageBucketName, AwsS3Region, fileName string) (*string, *string, error) {
 	file, err := os.Open(fileName)
 	if err != nil {
-		log.Println("Failed to open the file")
-		log.Println(err)
-		return nil, nil, errors.InternalServerError
+		return nil, nil, err
 	}
 	defer file.Close()
 
 	fileInfo, err := file.Stat()
 	if err != nil {
-		log.Println("Failed to get file stat")
-		log.Println(err)
-		return nil, nil, errors.InternalServerError
+		return nil, nil, err
 	}
 
 	fileSize := fileInfo.Size()
@@ -71,9 +67,7 @@ func (a AWS) Upload(AwsS3StorageBucketName, AwsS3Region, fileName string) (*stri
 
 	uid, err := uuid.NewUUID()
 	if err != nil {
-		log.Println("Failed to generate UUID")
-		log.Println(err)
-		return nil, nil, errors.InternalServerError
+		return nil, nil, err
 	}
 
 	_, err = s3.New(a.Session).PutObject(&s3.PutObjectInput{
@@ -87,14 +81,12 @@ func (a AWS) Upload(AwsS3StorageBucketName, AwsS3Region, fileName string) (*stri
 	})
 
 	if err != nil {
-		log.Println("Failed to upload !")
-		log.Println(err)
-		return nil, nil, errors.InternalServerError
+		return nil, nil, err
 	}
 
 	uidString := uid.String()
 	url := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", AwsS3StorageBucketName, AwsS3Region, uid.String())
-	return &url, &uidString, errors.Okay
+	return &url, &uidString, nil
 }
 
 // SendMessage is a method on AWS to send messages to SQS queue
@@ -102,8 +94,8 @@ func (a AWS) SendMessage(sqsURL string, payload interface{}) {
 	// Marshal the payload of the data sent to SQS
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
-		log.Printf("Failed to marshal data %#+v\n", payload)
-		log.Println(err)
+		errMsg := "Failed to marshal the data"
+		log.Error(err, &errMsg)
 		return
 	}
 
