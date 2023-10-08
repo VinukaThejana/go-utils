@@ -1,4 +1,4 @@
-// Package vision analyzes the image for potential harmful content
+// Package vision is used to identify harmful content in images with Google Cloud Platform
 package vision
 
 import (
@@ -8,21 +8,17 @@ import (
 	"os"
 
 	cloudVision "cloud.google.com/go/vision/apiv1"
-	"github.com/VinukaThejana/go-utils/logger"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/api/option"
 )
 
-var log logger.Logger
-
-// Vision is a struct that contains the vision client
+// Vision struct contains the connection to the vision client
 type Vision struct {
 	Client *cloudVision.ImageAnnotatorClient
 	Redis  *redis.Client
 }
 
-// Init is used to initialize the Google Cloud Vision
-// instance to detect explicit image content
+// Init is used to initialize the connection with the vision SDK
 func (v *Vision) Init(googleKey string) error {
 	auth, err := base64.StdEncoding.DecodeString(googleKey)
 	if err != nil {
@@ -39,11 +35,10 @@ func (v *Vision) Init(googleKey string) error {
 }
 
 // Detect is used to detect wether the image contains explicit content
-func (v Vision) Detect(fileName string, hash string) (VisonTypes, error) {
+func (v Vision) Detect(fileName string, hash string) (visionTypes VisonTypes, err error) {
 	ctx := context.Background()
 
-	// Check the Redis database to reduce API
-	// calls
+	// Check the Redis database to reduce API calls
 	state := v.Redis.Get(ctx, hash).Val()
 	if state != "" {
 		if state != ProperContent.String() {
@@ -76,26 +71,21 @@ func (v Vision) Detect(fileName string, hash string) (VisonTypes, error) {
 	racy := props.Racy.Enum().String()
 
 	if adult == VeryLikely.String() || adult == Likely.String() || adult == Possible.String() {
-		log.Error(fmt.Errorf("Cloud vision failed on Adult content"), nil)
 		return AdultContent, ErrVisionFailed
 	}
 	if violence == VeryLikely.String() {
-		log.Error(fmt.Errorf("Cloud vision failed on violence content"), nil)
 		return ViolenceContent, ErrVisionFailed
 	}
 
 	if spoof == VeryLikely.String() {
-		log.Error(fmt.Errorf("Cloud vision failed on spoof content"), nil)
 		return SpoofContent, ErrVisionFailed
 	}
 
 	if medical == VeryLikely.String() {
-		log.Error(fmt.Errorf("Cloud vision failed on mediacal content"), nil)
 		return MedicalContent, ErrVisionFailed
 	}
 
 	if racy == VeryLikely.String() {
-		log.Error(fmt.Errorf("Cloud vision failed on racy content"), nil)
 		return RacyContent, ErrVisionFailed
 	}
 
@@ -123,14 +113,12 @@ const (
 	UnknwonContent VisonTypes = "UNKNOWN_CONTENT"
 )
 
-// String convert the given vision type enum
-// to a string
+// String convert the given vision type enum to a string
 func (v VisonTypes) String() string {
 	return string(v)
 }
 
-// ParseVsionTypes parse the string format of the enum
-// to the relevant enum
+// ParseVsionTypes parse the string format of the enum to the relevant enum
 func ParseVsionTypes(v string) VisonTypes {
 	vision := map[VisonTypes]struct{}{
 		ProperContent:   {},
@@ -150,25 +138,20 @@ func ParseVsionTypes(v string) VisonTypes {
 	return vis
 }
 
-// Sevearity is an Enum to represent the vision
-// sevearity
+// Sevearity is an Enum to represent the vision sevearity
 type Sevearity string
 
-// String convert the VisonSevearity enum to its string
-// representative
+// String convert the VisonSevearity enum to its string representative
 func (vs Sevearity) String() string {
 	return string(vs)
 }
 
 const (
-	// VeryLikely is to represent that the image has a high risk
-	// in the given category
+	// VeryLikely is to represent that the image has a high risk in the given category
 	VeryLikely Sevearity = "VERY_LIKELY"
-	// Likely is to represent that the image has a medium risk
-	// in the given category
+	// Likely is to represent that the image has a medium risk in the given category
 	Likely Sevearity = "LIKELY"
-	// Possible is to represent that the image has a low risk
-	// in the given category
+	// Possible is to represent that the image has a low risk in the given category
 	Possible Sevearity = "POSSIBLE"
 )
 
