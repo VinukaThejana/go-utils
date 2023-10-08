@@ -3,7 +3,7 @@ module github.com/VinukaThejana/go-utils/amazon
 go 1.20
 
 require (
-	github.com/VinukaThejana/go-utils/logger v0.0.0-20230524051559-44018084aa9a
+	github.com/VinukaThejana/go-utils/logger v0.0.0-20230516042656-6a053ae09eda
 	github.com/aws/aws-sdk-go v1.44.234
 	github.com/google/uuid v1.3.0
 )

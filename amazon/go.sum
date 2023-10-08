@@ -1,3 +1,5 @@
+github.com/VinukaThejana/go-utils/logger v0.0.0-20230516042656-6a053ae09eda h1:2+PWmN35ciyIIY4VV9NoDN0Wv/kxOq+GsHj0EcI01sI=
+github.com/VinukaThejana/go-utils/logger v0.0.0-20230516042656-6a053ae09eda/go.mod h1:7TFzttlpkxxjVFfpERSdYeUUsrnGarFMbVWd2bXvc1k=
 github.com/VinukaThejana/go-utils/logger v0.0.0-20230524051559-44018084aa9a h1:KGkfGCw7uxt1aLoGizphFkXNX5mKKqtH4/udXCk0F+o=
 github.com/VinukaThejana/go-utils/logger v0.0.0-20230524051559-44018084aa9a/go.mod h1:7TFzttlpkxxjVFfpERSdYeUUsrnGarFMbVWd2bXvc1k=
 github.com/aws/aws-sdk-go v1.44.234 h1:8YbQ5AhpgV/cC7jYX8qS34Am/vcn2ZoIFJ1qIgwOL+0=
