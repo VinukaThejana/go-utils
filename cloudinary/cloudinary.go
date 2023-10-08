@@ -1,5 +1,5 @@
-// Package cloudinary contains the cloudinary SDK
-// to upload media to the cloudinary CDN
+// Package cloudinary contains the connection to the cloudinary SDK
+// and provides various storage functionalites on Cloudinary
 package cloudinary
 
 import (
@@ -10,14 +10,14 @@ import (
 	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
 )
 
-// Cloudinary is a struct that contains the cloudinary client
+// Cloudinary holds the connection client to cloudinary
 type Cloudinary struct {
 	Client *cloudinary.Cloudinary
 }
 
-// Init is a function that is used to initialize cloudinary
-func (c Cloudinary) Init(projectID, apiKey, apiSecret string) (*cloudinary.Cloudinary, error) {
-	client, err := cloudinary.NewFromParams(projectID, apiKey, apiSecret)
+// Init is used to initialzie the connection to cloudinary
+func (c Cloudinary) Init(projectID, apiKey, apiSecret string) (client *cloudinary.Cloudinary, err error) {
+	client, err = cloudinary.NewFromParams(projectID, apiKey, apiSecret)
 	if err != nil {
 		return nil, err
 	}
@@ -26,7 +26,7 @@ func (c Cloudinary) Init(projectID, apiKey, apiSecret string) (*cloudinary.Cloud
 }
 
 // Save the given image to the cloudinary CDN
-func (c Cloudinary) Save(path, hash, url string, eager, transformation *string) (string, error) {
+func (c Cloudinary) Save(path, hash, url string, eager, transformation *string) (secureURL string, err error) {
 	if eager == nil {
 		defaultEager := "f_avif|f_jp2|f_webp/fl_awebp"
 		eager = &defaultEager
