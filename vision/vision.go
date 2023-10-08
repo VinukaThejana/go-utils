@@ -1,4 +1,4 @@
-// Package vision is used to identify harmful content in images with Google Cloud Platform
+// Package vision is used to identify harmful content in images with Google Cloud Platform (GCP)
 package vision
 
 import (
