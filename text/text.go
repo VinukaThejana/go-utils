@@ -14,12 +14,17 @@ type Text struct{}
 // Style is a struct that contains the styling properties
 type Style struct {
 	Color   lipgloss.TerminalColor
-	Padding struct {
-		Left int
-		Top  int
-	}
-	Align lipgloss.Position
-	Bold  bool
+	Padding P
+	Align   lipgloss.Position
+	Bold    bool
+}
+
+// P is a struct that is used to represent the padding
+type P struct {
+	Left   int
+	Right  int
+	Top    int
+	Bottom int
 }
 
 // H heading
@@ -30,6 +35,8 @@ func (Text) H(style Style, strs ...string,
 		Foreground(style.Color).
 		PaddingTop(style.Padding.Top).
 		PaddingLeft(style.Padding.Left).
+		PaddingRight(style.Padding.Right).
+		PaddingBottom(style.Padding.Bottom).
 		Align(style.Align).
 		Render(strs...)
 }
@@ -42,6 +49,8 @@ func (Text) P(style Style, strs ...string,
 		Foreground(style.Color).
 		PaddingTop(style.Padding.Top).
 		PaddingLeft(style.Padding.Left).
+		PaddingRight(style.Padding.Right).
+		PaddingBottom(style.Padding.Bottom).
 		Align(style.Align).
 		Render(strs...)
 }
@@ -52,14 +61,24 @@ func (Text) Error(strs ...string) {
 		Text{}.P(Style{
 			Bold:  false,
 			Color: lipgloss.Color("#D72023"),
-			Padding: struct {
-				Left int
-				Top  int
-			}{
+			Padding: P{
 				Left: 1,
 				Top:  1,
 			},
 			Align: lipgloss.Left,
+		}, strs...),
+	)
+}
+
+// ErrorWithPadding is a function that is used to display the error messages with
+// the ability to control the pading
+func (Text) ErrorWithPadding(padding P, strs ...string) {
+	fmt.Println(
+		Text{}.P(Style{
+			Bold:    false,
+			Color:   lipgloss.Color("#D72023"),
+			Padding: padding,
+			Align:   lipgloss.Left,
 		}, strs...),
 	)
 }
