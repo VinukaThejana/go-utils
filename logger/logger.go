@@ -1,71 +1,176 @@
-// Package logger .
-// Used to validate structs, log errors and error messages
-// in a more log freindly manner
+// Package logger is a package that is used to print logs, err messages
+// to the stdout and validate structs with the help of go playground validator
 package logger
 
 import (
-	"log"
+	"fmt"
+	"time"
 
-	"github.com/fatih/color"
+	"github.com/VinukaThejana/go-utils/text"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/go-playground/validator/v10"
 )
 
-// Logger is a struct that is used fot logging output given
-// the message status
-type Logger struct{}
+// Error is a function that is used to log the error messages
+func Error(err error) {
+	now := time.Now()
 
-// Error is a method on logger to log the error messages to the stdout
-func (Logger) Error(err error, msg *string) {
-	color.Set(color.FgRed)
-	if msg != nil {
-		log.Println(*msg)
+	text.Text{}.ErrorWithPadding(
+		text.P{},
+		fmt.Sprintf(
+			"[%d:%s:%d : [%d:%d:%d]] : %s\n",
+			now.Year(),
+			now.Month().String(),
+			now.Day(),
+			now.Hour(),
+			now.Minute(),
+			now.Second(),
+			err.Error(),
+		),
+	)
+}
+
+// ErrorWithMsg is a function tha is used to log the error messages
+// with custom messages
+func ErrorWithMsg(err error, msg string) {
+	now := time.Now()
+
+	text.Text{}.ErrorWithPadding(
+		text.P{},
+		fmt.Sprintf(
+			"[%d:%s:%d : [%d:%d:%d]] : %s\n%s\n",
+			now.Year(),
+			now.Month().String(),
+			now.Day(),
+			now.Hour(),
+			now.Minute(),
+			now.Second(),
+			err.Error(),
+			msg,
+		),
+	)
+}
+
+// Errorf is a function that gives the ability to log error messages to the stdout
+// with exiting the program with error code 1
+func Errorf(err error) {
+	now := time.Now()
+
+	text.Text{}.ErrorWithPadding(
+		text.P{},
+		fmt.Sprintf(
+			"[%d:%s:%d : [%d:%d:%d]] : %s\n",
+			now.Year(),
+			now.Month().String(),
+			now.Day(),
+			now.Hour(),
+			now.Minute(),
+			now.Second(),
+			err.Error(),
+		),
+	)
+	panic("")
+}
+
+// ErrorfWithMsg is a function to log the error message with the custom message
+// to the stdout while exiting the program with error code 1
+func ErrorfWithMsg(err error, msg string) {
+	now := time.Now()
+
+	text.Text{}.ErrorWithPadding(
+		text.P{},
+		fmt.Sprintf(
+			"[%d:%s:%d : [%d:%d:%d]] : %s\n%s\n",
+			now.Year(),
+			now.Month().String(),
+			now.Day(),
+			now.Hour(),
+			now.Minute(),
+			now.Second(),
+			err.Error(),
+			msg,
+		),
+	)
+	panic("")
+}
+
+// Log is a function that is used to log a message to the stdout
+func Log(msg string) {
+	now := time.Now()
+
+	fmt.Println(text.Text{}.P(text.Style{
+		Color:   lipgloss.Color("#ffffff"),
+		Padding: text.P{},
+		Align:   lipgloss.Left,
+		Bold:    false,
+	},
+		fmt.Sprintf(
+			"[%d:%s:%d : [%d:%d:%d]] : %s\n",
+			now.Year(),
+			now.Month().String(),
+			now.Day(),
+			now.Hour(),
+			now.Minute(),
+			now.Second(),
+			msg,
+		),
+	),
+	)
+}
+
+// LogWithStyling is a function that is used to log the messages
+// to the stdout with styling
+func LogWithStyling(msg string, style text.Style) {
+	now := time.Now()
+	switch {
+	case style.Align == 0:
+		style.Align = lipgloss.Left
+		fallthrough
+	case style.Color == nil:
+		style.Color = lipgloss.Color("#ffffff")
 	}
-	log.Println(err)
-	color.Unset()
+
+	fmt.Println(text.Text{}.P(text.Style{
+		Color:   style.Color,
+		Padding: style.Padding,
+		Align:   style.Align,
+		Bold:    style.Bold,
+	},
+		fmt.Sprintf(
+			"[%d:%s:%d : [%d:%d:%d]] : %s\n",
+			now.Year(),
+			now.Month().String(),
+			now.Day(),
+			now.Hour(),
+			now.Minute(),
+			now.Second(),
+			msg,
+		),
+	),
+	)
 }
 
-// Errorf is a method on logger to log the error messages to the stdout
-// while panicing the programming upon the process
-func (Logger) Errorf(err error, msg *string) {
-	color.Set(color.FgRed)
-	if msg != nil {
-		log.Println(*msg)
-	}
-	log.Fatalln(err)
-	color.Unset()
-}
-
-// Success is a method on logger to log the success messages to the stdout
-func (Logger) Success(msg string) {
-	color.Set(color.FgGreen)
-	log.Println(msg)
-	color.Unset()
-}
-
-// Validate is used to validate the given struct and notify wehter the validation was
-// failed or wether the validation was successful
-func (Logger) Validate(s interface{}) bool {
+// Validate is a function that is used to validate wether a given struct satisfies
+// a given condition
+func Validate(s interface{}) (isValid bool, err error) {
 	v := validator.New()
-	err := v.Struct(s)
+	err = v.Struct(s)
 	if err != nil {
-		color.Set(color.FgRed)
-		log.Println(err)
-		color.Unset()
-		return false
+		return false, err
 	}
 
-	return true
+	return true, nil
 }
 
-// Validatef is used to validate the given structs and panic if it fails
+// Validatef is a function that is used to validate wether a given struct satisfies
+// a given condition, if the condition is not met this will cause the program to panic
 // the validation
-func (Logger) Validatef(s interface{}) {
+func Validatef(s interface{}) {
 	v := validator.New()
 	err := v.Struct(s)
-	if err != nil {
-		color.Set(color.FgRed)
-		log.Fatalln(err)
-		color.Unset()
+	if err == nil {
+		return
 	}
-	return
+
+	Errorf(err)
 }
