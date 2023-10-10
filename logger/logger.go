@@ -4,6 +4,7 @@ package logger
 
 import (
 	"fmt"
+	"runtime/debug"
 	"time"
 
 	"github.com/VinukaThejana/go-utils/text"
@@ -16,7 +17,9 @@ func Error(err error) {
 	now := time.Now()
 
 	text.Text{}.ErrorWithPadding(
-		text.P{},
+		text.P{
+			Bottom: 0,
+		},
 		fmt.Sprintf(
 			"[%d:%s:%d : [%d:%d:%d]] : %s\n",
 			now.Year(),
@@ -36,7 +39,9 @@ func ErrorWithMsg(err error, msg string) {
 	now := time.Now()
 
 	text.Text{}.ErrorWithPadding(
-		text.P{},
+		text.P{
+			Bottom: 0,
+		},
 		fmt.Sprintf(
 			"[%d:%s:%d : [%d:%d:%d]] : %s\n%s\n",
 			now.Year(),
@@ -57,7 +62,12 @@ func Errorf(err error) {
 	now := time.Now()
 
 	text.Text{}.ErrorWithPadding(
-		text.P{},
+		text.P{
+			Top:    0,
+			Bottom: 0,
+			Right:  0,
+			Left:   0,
+		},
 		fmt.Sprintf(
 			"[%d:%s:%d : [%d:%d:%d]] : %s\n",
 			now.Year(),
@@ -69,7 +79,16 @@ func Errorf(err error) {
 			err.Error(),
 		),
 	)
-	panic("")
+
+	text.Text{}.ErrorWithPadding(
+		text.P{
+			Top:    0,
+			Bottom: 0,
+			Right:  0,
+			Left:   0,
+		},
+		fmt.Sprintf("\n STACKTRACE \n%s\n", string(debug.Stack())),
+	)
 }
 
 // ErrorfWithMsg is a function to log the error message with the custom message
@@ -91,7 +110,16 @@ func ErrorfWithMsg(err error, msg string) {
 			msg,
 		),
 	)
-	panic("")
+
+	text.Text{}.ErrorWithPadding(
+		text.P{
+			Top:    0,
+			Bottom: 0,
+			Right:  0,
+			Left:   0,
+		},
+		fmt.Sprintf("\n STACKTRACE \n%s\n", string(debug.Stack())),
+	)
 }
 
 // Log is a function that is used to log a message to the stdout
