@@ -4,6 +4,7 @@ package logger
 
 import (
 	"fmt"
+	"os"
 	"runtime/debug"
 	"time"
 
@@ -89,6 +90,8 @@ func Errorf(err error) {
 		},
 		fmt.Sprintf("\n STACKTRACE \n\n%s\n", string(debug.Stack())),
 	)
+
+	os.Exit(1)
 }
 
 // ErrorfWithMsg is a function to log the error message with the custom message
