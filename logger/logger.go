@@ -69,7 +69,7 @@ func Errorf(err error) {
 			Left:   0,
 		},
 		fmt.Sprintf(
-			"[%d:%s:%d : [%d:%d:%d]] : %s\n",
+			"[%d:%s:%d : [%d:%d:%d]] : %s",
 			now.Year(),
 			now.Month().String(),
 			now.Day(),
@@ -87,7 +87,7 @@ func Errorf(err error) {
 			Right:  0,
 			Left:   0,
 		},
-		fmt.Sprintf("\n STACKTRACE \n%s\n", string(debug.Stack())),
+		fmt.Sprintf("\n STACKTRACE \n\n%s\n", string(debug.Stack())),
 	)
 }
 
